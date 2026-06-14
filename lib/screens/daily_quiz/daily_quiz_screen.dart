@@ -381,7 +381,7 @@ class _DailyQuizScreenState extends State<DailyQuizScreen> {
           ),
         ),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -968,7 +968,7 @@ class _DailyQuizScreenState extends State<DailyQuizScreen> {
     final nextCategory = _getNextCategory(stageInfo['currentCategory']);
     final daysRemaining = stageInfo['daysRemainingInStage'];
     
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -1047,9 +1047,9 @@ class _DailyQuizScreenState extends State<DailyQuizScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  daysRemaining > 1
-                      ? '${daysRemaining - 1} more days in this stage'
-                      : 'Moving to $nextCategory tomorrow!',
+                  daysRemaining > 0
+                      ? "$daysRemaining more day${daysRemaining > 1 ? 's' : ''} in this stage"
+                      : "Moving to $nextCategory tomorrow!",
                   style: TextStyle(
                     color: Colors.purple.shade600,
                   ),
