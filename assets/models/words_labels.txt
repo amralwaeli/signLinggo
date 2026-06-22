@@ -1,18 +1,11 @@
-Bread
-Brother
-Bus
-Drink
-Eat
-Elder sister
-Father
-Help
-Hotel
-How much
-Hungry
-Mother
+@
+Goodbye
+Hello
+I love you
 No
-Sorry
-Thirsty
-Toilet
-Water
+Please
+Thank you
 Yes
+hungry
+sorry
+thirsty

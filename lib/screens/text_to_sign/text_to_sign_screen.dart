@@ -41,9 +41,7 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> with Widg
   
   // Mapping for Text-to-Sign (Image Display)
   final List<String> _wordLabels = [
-    'bread', 'brother', 'bus', 'drink', 'eat', 'elder sister',
-    'father', 'help', 'hotel', 'how much', 'hungry', 'mother',
-    'no', 'sorry', 'thirsty', 'toilet', 'water', 'yes', 'hello'
+    '@', 'goodbye', 'hello', 'i love you', 'no', 'please', 'thank you', 'yes', 'hungry', 'sorry', 'thirsty'
   ];
 
   @override
@@ -249,36 +247,161 @@ class _TextTranslationScreenState extends State<TextTranslationScreen> with Widg
 
   // --- TEXT TRANSLATION LOGIC ---
   void _translateText() {
+    final input = _textController.text.trim();
+    if (input.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter text to translate')),
+      );
+      return;
+    }
+
+    final unsupported = _getUnsupportedWords(input);
+    if (unsupported.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Word "${unsupported.join('", "')}" is not supported.'),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+
     setState(() {
-      _translatedText = _textController.text.isEmpty
-          ? 'Please enter text first.'
-          : '(Sign translation of "${_textController.text}")';
+      _translatedText = '(Sign translation of "${_textController.text}")';
     });
   }
 
+  List<String> _getUnsupportedWords(String input) {
+    final text = input.trim().toLowerCase();
+    final Map<String, String> wordImageMap = {
+      'goodbye': 'Goodbye',
+      'hello': 'hello',
+      'i love you': 'I love you',
+      'no': 'No',
+      'please': 'Please',
+      'thank you': 'Thank you',
+      'yes': 'Yes',
+      'hungry': 'hungry',
+      'sorry': 'sorry',
+      'thirsty': 'thirsty',
+      '@': 'at_symbol',
+    };
+
+    final multiWordPhrases = wordImageMap.keys.where((k) => k.contains(' ')).toList()
+      ..sort((a, b) => b.split(' ').length.compareTo(a.split(' ').length));
+
+    final words = text
+        .split(RegExp(r'[\s\p{P}]+', unicode: true))
+        .where((w) => w.isNotEmpty)
+        .toList();
+
+    final List<String> unsupported = [];
+    int i = 0;
+
+    while (i < words.length) {
+      bool matched = false;
+
+      for (String phrase in multiWordPhrases) {
+        final phraseWords = phrase.split(' ');
+        if (i + phraseWords.length <= words.length) {
+          if (words.sublist(i, i + phraseWords.length).join(' ') == phrase) {
+            i += phraseWords.length;
+            matched = true;
+            break;
+          }
+        }
+      }
+
+      if (!matched) {
+        final word = words[i];
+        final isNumber = RegExp(r'^\d+$').hasMatch(word);
+        final isKnownWord = wordImageMap.containsKey(word);
+        final isSingleLetter = word.length == 1 && RegExp(r'[a-zA-Z]').hasMatch(word);
+
+        if (!isNumber && !isKnownWord && !isSingleLetter) {
+          unsupported.add(word.toUpperCase());
+        }
+        i++;
+      }
+    }
+
+    return unsupported;
+  }
+
   List<String> _getAssetPaths(String input) {
-    String word = input.trim().toLowerCase();
-    if (word.isEmpty) return [];
+    String text = input.trim().toLowerCase();
+    if (text.isEmpty) return [];
 
-    if (RegExp(r'^\d+$').hasMatch(word)) {
-      if (word == "10") return ['assets/assets/sign_images/numbers/10.png'];
-      return word.split('').map((digit) => 'assets/assets/sign_images/numbers/$digit.png').toList();
+    final Map<String, String> wordImageMap = {
+      'goodbye': 'Goodbye',
+      'hello': 'hello',
+      'i love you': 'I love you',
+      'no': 'No',
+      'please': 'Please',
+      'thank you': 'Thank you',
+      'yes': 'Yes',
+      'hungry': 'hungry',
+      'sorry': 'sorry',
+      'thirsty': 'thirsty',
+      '@': 'at_symbol',
+    };
+
+    final List<String> multiWordPhrases = wordImageMap.keys
+        .where((k) => k.contains(' '))
+        .toList()
+      ..sort((a, b) => b.split(' ').length.compareTo(a.split(' ').length));
+
+    final List<String> words = text
+        .split(RegExp(r'[\s\p{P}]+', unicode: true))
+        .where((w) => w.isNotEmpty)
+        .toList();
+
+    List<String> allPaths = [];
+    int i = 0;
+
+    while (i < words.length) {
+      bool matched = false;
+
+      // Try multi-word phrases left-to-right to preserve sentence order
+      for (String phrase in multiWordPhrases) {
+        final phraseWords = phrase.split(' ');
+        if (i + phraseWords.length <= words.length) {
+          final candidate = words.sublist(i, i + phraseWords.length).join(' ');
+          if (candidate == phrase) {
+            final imageName = wordImageMap[phrase]!;
+            allPaths.add('assets/assets/sign_images/words/$imageName.png');
+            i += phraseWords.length;
+            matched = true;
+            break;
+          }
+        }
+      }
+
+      if (!matched) {
+        final word = words[i];
+
+        if (RegExp(r'^\d+$').hasMatch(word)) {
+          if (word == "10") {
+            allPaths.add('assets/assets/sign_images/numbers/10.png');
+          } else {
+            allPaths.addAll(word.split('').map((d) => 'assets/assets/sign_images/numbers/$d.png'));
+          }
+        } else if (wordImageMap.containsKey(word)) {
+          final imageName = wordImageMap[word]!;
+          if (word == '@') {
+            allPaths.add('assets/assets/sign_images/symbols/$imageName.png');
+          } else {
+            allPaths.add('assets/assets/sign_images/words/$imageName.png');
+          }
+        } else if (word.length == 1 && RegExp(r'[a-zA-Z]').hasMatch(word)) {
+          allPaths.add('assets/assets/sign_images/alphabets/${word.toUpperCase()}.png');
+        }
+
+        i++;
+      }
     }
 
-    String? matchedLabel = _wordLabels.cast<String?>().firstWhere(
-      (label) => label!.toLowerCase() == word,
-      orElse: () => null,
-    );
-
-    if (matchedLabel != null) {
-      return ['assets/assets/sign_images/words/$matchedLabel.png'];
-    }
-
-    if (word.length == 1 && RegExp(r'[a-zA-Z]').hasMatch(word)) {
-      return ['assets/assets/sign_images/alphabets/${word.toUpperCase()}.png'];
-    }
-
-    return [];
+    return allPaths;
   }
 
   Widget _buildDisplayImage() {
